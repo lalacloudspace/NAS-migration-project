@@ -1,0 +1,72 @@
+#!/bin/bash
+set -ex
+
+# --- Install and start SSM Agent ---
+dnf install -y amazon-ssm-agent
+systemctl enable amazon-ssm-agent
+systemctl start amazon-ssm-agent
+
+# --- Define variables (Terraform will inject actual values) ---
+region="${region}"
+efs_id="${efs_id}"
+db_endpoint="${db_endpoint}"
+db_name="${db_name}"
+db_user="${db_user}"
+db_password="${db_password}"
+
+# --- Update & install packages ---
+dnf -y update
+dnf -y install amazon-efs-utils nfs-utils httpd php php-mysqlnd php-gd php-xml php-mbstring unzip wget
+
+# --- Enable Apache ---
+systemctl enable httpd
+systemctl start httpd
+
+# --- Wait for EFS mount target to become reachable ---
+MAX_RETRIES=10
+SLEEP_TIME=15
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if nc -z "${efs_id}.efs.${region}.amazonaws.com" 2049; then
+        echo "✅ EFS endpoint is reachable."
+        break
+    else
+        echo "⏳ Waiting for EFS mount target... attempt $((RETRY_COUNT+1))/$MAX_RETRIES"
+        sleep $SLEEP_TIME
+        RETRY_COUNT=$((RETRY_COUNT+1))
+    fi
+done
+
+# --- Mount EFS ---
+mkdir -p /var/www/html
+echo "${efs_id}.efs.${region}.amazonaws.com:/ /var/www/html efs _netdev,noresvport,tls 0 0" >> /etc/fstab
+mount -a
+
+# --- Verify mount ---
+df -h | grep efs && echo "✅ EFS mounted successfully" || echo "❌ EFS not mounted"
+
+# --- Download & configure WordPress ---
+cd /tmp
+wget https://wordpress.org/latest.tar.gz
+tar -xzf latest.tar.gz
+rsync -a wordpress/ /var/www/html/
+
+# --- Create WordPress configuration ---
+cat >/var/www/html/wp-config.php <<EOF
+<?php
+define('DB_NAME', '${db_name}');
+define('DB_USER', '${db_user}');
+define('DB_PASSWORD', '${db_password}');
+define('DB_HOST', '${db_endpoint}');
+define('DB_CHARSET', 'utf8');
+define('DB_COLLATE', '');
+\$table_prefix = 'wp_';
+define('WP_DEBUG', false);
+if (!defined('ABSPATH')) define('ABSPATH', __DIR__ . '/');
+require_once ABSPATH . 'wp-settings.php';
+EOF
+
+# --- Fix permissions ---
+chown -R apache:apache /var/www/html
+chmod -R 755 /var/www/html
+systemctl restart httpd
