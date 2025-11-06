@@ -58,3 +58,15 @@ output "alb_zone_id" {
   description = "Zone ID of the Application Load Balancer"
   value       = module.dynamic_web.alb_zone_id
 }
+
+ output "alb_arn_suffix" {
+  value = module.dynamic_web.alb_arn_suffix
+}
+
+output "target_group_arn_suffix" {
+  value = module.dynamic_web.target_group_arn_suffix
+}
+
+output "asg_name" {
+  value = module.dynamic_web.asg_name
+}

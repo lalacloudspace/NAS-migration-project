@@ -76,3 +76,16 @@ module "dynamic_web" {
   # ---------- EC2 / Compute ----------
   instance_type = var.instance_type
 }
+
+############################################
+# Monitoring Module (CloudWatch)
+############################################
+module "monitoring" {
+  source                   = "./modules/monitoring"
+  sns_topic_arn            = var.sns_topic_arn
+  load_balancer_arn_suffix = module.dynamic_web.alb_arn_suffix
+  target_group_arn_suffix  = module.dynamic_web.target_group_arn_suffix
+  asg_name                 = module.dynamic_web.asg_name
+
+  depends_on = [module.dynamic_web]
+}

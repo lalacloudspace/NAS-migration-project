@@ -101,23 +101,6 @@ variable "ssm_core_policy_arn" {
   type        = string
 }
 
-# ---------- NETWORKING ----------
-# (These are outputs from the network module but declared for clarity)
-# variable "vpc_id" {
-#   description = "VPC ID from the Network module"
-#   type        = string
-# }
-
-# variable "public_subnet_ids" {
-#   description = "List of public subnet IDs from the Network module"
-#   type        = list(string)
-# }
-
-# variable "private_subnet_ids" {
-#   description = "List of private subnet IDs from the Network module"
-#   type        = list(string)
-# }
-
 # ---------- DATABASE ----------
 variable "db_name" {
   description = "Database name for WordPress or web app"
@@ -187,3 +170,26 @@ variable "instance_type" {
   description = "EC2 instance type for web servers"
   type        = string
 }
+
+# ---------- MONITORING ----------
+variable "sns_topic_arn" {
+  description = "ARN of the SNS topic to send alarm notifications"
+  type        = string
+}
+
+# variable "target_group_arn_suffix" {
+#   description = "Target group ARN suffix"
+#   type        = string
+# }
+
+# variable "load_balancer_arn_suffix" {
+#   description = "Load balancer ARN suffix"
+#   type        = string
+# }
+
+# variable "asg_name" {
+#   description = "Name of the Auto Scaling Group"
+#   type        = string
+# }
+
+
