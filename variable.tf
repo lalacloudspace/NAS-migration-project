@@ -70,8 +70,7 @@ variable "acm_certificate_arn" {
   type = string
 }
 
-# DYNAMIC WEB MODULE VARIABLES
-# ---------- PROJECT CONFIGURATION ----------
+#DYNAMIC WEB MODULE VARIABLES
 variable "project_name" {
   description = "The name of the project (e.g., nas)"
   type        = string
@@ -177,19 +176,5 @@ variable "sns_topic_arn" {
   type        = string
 }
 
-# variable "target_group_arn_suffix" {
-#   description = "Target group ARN suffix"
-#   type        = string
-# }
-
-# variable "load_balancer_arn_suffix" {
-#   description = "Load balancer ARN suffix"
-#   type        = string
-# }
-
-# variable "asg_name" {
-#   description = "Name of the Auto Scaling Group"
-#   type        = string
-# }
 
 

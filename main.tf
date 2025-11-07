@@ -1,6 +1,14 @@
+
+############################################
+# --- PROVIDER CONFIGURATION ---
+############################################
 provider "aws" {
   region = var.aws_region
 }
+
+############################################
+# --- IAM MODULE ---
+############################################
 
 module "iam" {
   source = "./modules/iam"
@@ -14,6 +22,10 @@ module "iam" {
   operations_users = var.operations_users
 }
 
+############################################
+# --- NETWORK MODULE ---
+############################################
+
 module "network" {
   source = "./modules/network"
   vpc_name            = var.vpc_name
@@ -22,6 +34,10 @@ module "network" {
   private_subnet_cidrs = var.private_subnet_cidrs
   availability_zones   = var.availability_zones
 }
+
+############################################
+# --- STATIC WEBSITE MODULE ---
+############################################
 
 module "static_site" {
   source = "./modules/Static-website"
@@ -32,7 +48,10 @@ module "static_site" {
   acm_certificate_arn = var.acm_certificate_arn
 }
 
+
+############################################
 # --- DYNAMIC WEB MODULE ---
+############################################
 module "dynamic_web" {
   source = "./modules/Dynamic-web"
 

@@ -41,8 +41,9 @@ output "static_site_url" {
   value = module.static_site.website_url
 }
 
-#
-# ✅ Corrected Root outputs.tf
+# --------------------------
+# Dynamic Web Module Outputs
+# --------------------------
 
 output "alb_dns_name" {
   description = "DNS name of the Application Load Balancer"
