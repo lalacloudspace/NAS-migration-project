@@ -18,9 +18,13 @@ db_password="${db_password}"
 dnf -y update
 dnf -y install amazon-efs-utils nfs-utils httpd php php-mysqlnd php-gd php-xml php-mbstring unzip wget
 
-# --- Enable Apache ---
+# --- Enable and start Apache ---
 systemctl enable httpd
 systemctl start httpd
+
+# --- Temporary health-check page ---
+echo "OK" > /var/www/html/index.html
+
 
 # --- Wait for EFS mount target to become reachable ---
 MAX_RETRIES=10
@@ -42,16 +46,26 @@ mkdir -p /var/www/html
 echo "${efs_id}.efs.${region}.amazonaws.com:/ /var/www/html efs _netdev,noresvport,tls 0 0" >> /etc/fstab
 mount -a
 
-# --- Verify mount ---
-df -h | grep efs && echo "✅ EFS mounted successfully" || echo "❌ EFS not mounted"
+# --- Verify mount (wait until mounted) ---
+for i in {1..10}; do
+  if mountpoint -q /var/www/html; then
+    echo "✅ EFS is mounted."
+    break
+  else
+    echo "⏳ Waiting for /var/www/html to mount... ($i/10)"
+    sleep 10
+  fi
+done
 
 # --- Download & configure WordPress ---
-cd /tmp
+cd /var/www/html
 wget https://wordpress.org/latest.tar.gz
 tar -xzf latest.tar.gz
-rsync -a wordpress/ /var/www/html/
+mv wordpress/* .
+rm -rf wordpress latest.tar.gz
+cp wp-config-sample.php wp-config.php
 
-# --- Create WordPress configuration ---
+# --- Configure wp-config.php with DB details and HTTPS handling ---
 cat >/var/www/html/wp-config.php <<EOF
 <?php
 define('DB_NAME', '${db_name}');
@@ -62,11 +76,20 @@ define('DB_CHARSET', 'utf8');
 define('DB_COLLATE', '');
 \$table_prefix = 'wp_';
 define('WP_DEBUG', false);
+
+// Handle HTTPS when behind AWS Load Balancer
+if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+    \$_SERVER['HTTPS'] = 'on';
+}
+
 if (!defined('ABSPATH')) define('ABSPATH', __DIR__ . '/');
 require_once ABSPATH . 'wp-settings.php';
 EOF
 
-# --- Fix permissions ---
+# --- Set permissions ---
 chown -R apache:apache /var/www/html
 chmod -R 755 /var/www/html
+
+# --- Restart Apache ---
 systemctl restart httpd
+
